@@ -1,51 +1,35 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 
-// Configuration
+// Configuration : aucune clé API dans ce fichier.
 const PORT = Number(process.env.PORT || 3000);
+const ON_VERCEL = process.env.VERCEL === '1';
+
 const KEY = process.env.REMOVE_BG_API_KEY?.trim();
-const size = process.env.REMOVE_BG_SIZE?.trim() || 'preview';
-const onVercel = process.env.VERCEL === '1';
+const SIZE = process.env.REMOVE_BG_SIZE?.trim() || 'preview';
 
-const MAX_FILE = onVercel
-  ? 4_000_000
-  : 10 * 1024 * 1024;
-
+const MAX_FILE = ON_VERCEL ? 4_000_000 : 10 * 1024 * 1024;
 const MAX_BODY = MAX_FILE + 128 * 1024;
-
-// Marge sous la limite des réponses non streamées de Vercel.
-const MAX_RESPONSE = onVercel
+const MAX_RESPONSE = ON_VERCEL
   ? 4_000_000
   : 40 * 1024 * 1024;
 
-const fileLimitLabel = onVercel ? '4 Mo' : '10 Mo';
+const FILE_LIMIT_LABEL = ON_VERCEL ? '4 Mo' : '10 Mo';
 
-const page = await readFile(
-  new URL('./public/index.html', import.meta.url)
-);
-
-if (!KEY) {
-  throw new Error(
-    'La variable REMOVE_BG_API_KEY est manquante.'
-  );
-}
-
-if (['preview', 'auto', 'full'].includes(size)) {
-  throw new Error(
-    'REMOVE_BG_SIZE doit valoir preview, auto ou full.'
-  );
-}
-
-const requestedBudget = Number(
+const configuredBudget = Number(
   process.env.MAX_REQUESTS_PER_HOUR || 30
 );
 
-const hourlyBudget = Number.isFinite(requestedBudget)
-  ? Math.max(1, Math.floor(requestedBudget))
+const HOURLY_BUDGET = Number.isFinite(configuredBudget)
+  ? Math.max(1, Math.floor(configuredBudget))
   : 30;
 
-// Comparaison d'origines normalisées.
-// Un slash final ou un espace dans PUBLIC_ORIGIN ne bloque plus.
+// Ces limites sont par instance, pas globales sur Vercel.
+const rates = new Map();
+let active = 0;
+let used = 0;
+let usageWindow = Date.now();
+
 function normalizeOrigin(value) {
   if (typeof value !== 'string' || !value.trim()) {
     return null;
@@ -70,7 +54,7 @@ function normalizeOrigin(value) {
 
 const allowedOrigins = new Set();
 
-function addAllowedOrigin(value) {
+function allowOrigin(value) {
   const origin = normalizeOrigin(value);
 
   if (origin) {
@@ -78,33 +62,30 @@ function addAllowedOrigin(value) {
   }
 }
 
-// Domaine public connu de SpeedRemove.
-addAllowedOrigin('https://speed-remove.vercel.app');
+// Domaine officiel de votre site.
+allowOrigin('https://speed-remove.vercel.app');
 
-// Domaine personnalisé éventuellement configuré.
-addAllowedOrigin(process.env.PUBLIC_ORIGIN);
+// Domaine personnalisé éventuel.
+allowOrigin(process.env.PUBLIC_ORIGIN);
 
-// Adresses attribuées à CE projet par Vercel.
-// On n'autorise pas tous les domaines *.vercel.app.
-for (const hostname of [
-  process.env.VERCEL_URL,
-  process.env.VERCEL_PROJECT_PRODUCTION_URL
-]) {
-  if (hostname?.trim()) {
-    addAllowedOrigin(`https://${hostname.trim()}`);
+// Adresses propres à ce projet Vercel.
+// Ne pas autoriser tous les domaines *.vercel.app.
+if (ON_VERCEL) {
+  for (const host of [
+    process.env.VERCEL_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ]) {
+    if (host?.trim()) {
+      allowOrigin(`https://${host.trim()}`);
+    }
   }
+} else {
+  allowOrigin(`http://localhost:${PORT}`);
+  allowOrigin(`http://127.0.0.1:${PORT}`);
 }
 
-// Développement local uniquement.
-if (!onVercel) {
-  addAllowedOrigin(`http://localhost:${PORT}`);
-  addAllowedOrigin(`http://127.0.0.1:${PORT}`);
-}
-
-function sameOrigin(req) {
+function isAllowedOrigin(req) {
   const origin = normalizeOrigin(req.headers.origin);
-
-  // Les requêtes sans Origin sont refusées.
   return origin !== null && allowedOrigins.has(origin);
 }
 
@@ -146,7 +127,7 @@ function looksLikeImage(buffer, type) {
   return false;
 }
 
-async function bodyBytes(req) {
+async function readBody(req) {
   const chunks = [];
   let total = 0;
 
@@ -155,7 +136,7 @@ async function bodyBytes(req) {
 
     if (total > MAX_BODY) {
       throw Object.assign(
-        new Error(`Cette image dépasse ${fileLimitLabel}.`),
+        new Error(`Cette image dépasse ${FILE_LIMIT_LABEL}.`),
         { status: 413 }
       );
     }
@@ -166,24 +147,7 @@ async function bodyBytes(req) {
   return Buffer.concat(chunks);
 }
 
-// Compteurs temporaires, propres à chaque instance.
-// Sur Vercel, ils ne constituent PAS un quota global.
-const rates = new Map();
-let active = 0;
-let used = 0;
-let usageWindow = Date.now();
-
-setInterval(() => {
-  const now = Date.now();
-
-  for (const [ip, record] of rates) {
-    if (now - record.start > 60_000) {
-      rates.delete(ip);
-    }
-  }
-}, 60_000).unref();
-
-const server = http.createServer(async (req, res) => {
+function setSecurityHeaders(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'same-origin');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -202,6 +166,51 @@ const server = http.createServer(async (req, res) => {
       "frame-ancestors 'none'"
     ].join('; ')
   );
+}
+
+async function servePage(req, res, path) {
+  // Sur Vercel, les fichiers public/ sont servis séparément.
+  if (ON_VERCEL) {
+    if (path === '/') {
+      res.writeHead(302, {
+        Location: '/index.html',
+        'Cache-Control': 'no-store'
+      });
+      res.end();
+      return;
+    }
+
+    return json(
+      res,
+      404,
+      'Vérifiez que public/index.html est présent dans le dépôt GitHub.'
+    );
+  }
+
+  // Lecture uniquement lors d'une requête locale.
+  // Aucune lecture HTML au démarrage du serveur.
+  try {
+    const page = await readFile(
+      new URL('./public/index.html', import.meta.url)
+    );
+
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-cache'
+    });
+
+    res.end(req.method === 'HEAD' ? undefined : page);
+  } catch {
+    return json(
+      res,
+      500,
+      'Le fichier public/index.html est introuvable.'
+    );
+  }
+}
+
+async function handleRequest(req, res) {
+  setSecurityHeaders(res);
 
   const path = (req.url || '/').split('?')[0];
 
@@ -209,18 +218,24 @@ const server = http.createServer(async (req, res) => {
     ['GET', 'HEAD'].includes(req.method) &&
     ['/', '/index.html'].includes(path)
   ) {
-    res.writeHead(200, {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-cache'
-    });
-
-    res.end(req.method === 'HEAD' ? undefined : page);
-    return;
+    return servePage(req, res, path);
   }
 
   if (path === '/favicon.ico') {
     res.writeHead(204);
     res.end();
+    return;
+  }
+
+  // Permet de vérifier que le serveur démarre,
+  // sans exposer la clé ni sa configuration.
+  if (path === '/api/health' && req.method === 'GET') {
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store'
+    });
+
+    res.end(JSON.stringify({ ok: true }));
     return;
   }
 
@@ -233,8 +248,7 @@ const server = http.createServer(async (req, res) => {
     return json(res, 405, 'Méthode non autorisée.');
   }
 
-  if (!sameOrigin(req)) {
-    // Aucun secret ni contenu de photo dans les logs.
+  if (!isAllowedOrigin(req)) {
     console.warn('Origine refusée :', {
       origin: normalizeOrigin(req.headers.origin),
       allowedOrigins: [...allowedOrigins]
@@ -243,7 +257,23 @@ const server = http.createServer(async (req, res) => {
     return json(
       res,
       403,
-      'Adresse du site non autorisée. Ouvrez SpeedRemove depuis son domaine officiel.'
+      'Adresse non autorisée. Ouvrez https://speed-remove.vercel.app.'
+    );
+  }
+
+  if (!KEY) {
+    return json(
+      res,
+      503,
+      'La clé remove.bg manque dans les variables du serveur. Ajoutez REMOVE_BG_API_KEY puis redéployez.'
+    );
+  }
+
+  if (['preview', 'auto', 'full'].includes(SIZE)) {
+    return json(
+      res,
+      503,
+      'La variable REMOVE_BG_SIZE doit valoir preview, auto ou full.'
     );
   }
 
@@ -252,37 +282,37 @@ const server = http.createServer(async (req, res) => {
   );
 
   if (
-    !contentType.toLowerCase().startsWith(
-      'multipart/form-data;'
-    )
+    !contentType.toLowerCase().startsWith('multipart/form-data;')
   ) {
     return json(res, 400, 'Une image est requise.');
   }
 
-  const length = Number(
+  const contentLength = Number(
     req.headers['content-length'] || 0
   );
 
-  if (length > MAX_BODY) {
+  if (contentLength > MAX_BODY) {
     return json(
       res,
       413,
-      `Cette image dépasse ${fileLimitLabel}.`
+      `Cette image dépasse ${FILE_LIMIT_LABEL}.`
     );
   }
 
-  // Ne pas faire confiance à un X-Forwarded-For arbitraire.
-  const ip = req.socket.remoteAddress || 'unknown';
   const now = Date.now();
+  const ip = req.socket.remoteAddress || 'unknown';
+
+  // Nettoyage des compteurs expirés, sans minuterie permanente.
+  for (const [address, record] of rates) {
+    if (now - record.start >= 60_000) {
+      rates.delete(address);
+    }
+  }
+
   const bucket = rates.get(ip) || {
     start: now,
     count: 0
   };
-
-  if (now - bucket.start > 60_000) {
-    bucket.start = now;
-    bucket.count = 0;
-  }
 
   if (bucket.count >= 5) {
     res.setHeader('Retry-After', '60');
@@ -302,7 +332,7 @@ const server = http.createServer(async (req, res) => {
     usageWindow = now;
   }
 
-  if (used >= hourlyBudget) {
+  if (used >= HOURLY_BUDGET) {
     return json(
       res,
       429,
@@ -321,11 +351,11 @@ const server = http.createServer(async (req, res) => {
   active++;
 
   try {
-    const bytes = await bodyBytes(req);
-    let data;
+    const bytes = await readBody(req);
+    let formData;
 
     try {
-      data = await new Request(
+      formData = await new Request(
         'http://localhost/upload',
         {
           method: 'POST',
@@ -341,7 +371,7 @@ const server = http.createServer(async (req, res) => {
       );
     }
 
-    const images = data.getAll('image_file');
+    const images = formData.getAll('image_file');
     const file = images[0];
 
     if (
@@ -361,13 +391,12 @@ const server = http.createServer(async (req, res) => {
       return json(
         res,
         413,
-        `Cette image dépasse ${fileLimitLabel}.`
+        `Cette image dépasse ${FILE_LIMIT_LABEL}.`
       );
     }
 
     if (
-      ['image/jpeg', 'image/png', 'image/webp']
-        .includes(file.type)
+      ['image/jpeg', 'image/png', 'image/webp'].includes(file.type)
     ) {
       return json(
         res,
@@ -376,9 +405,7 @@ const server = http.createServer(async (req, res) => {
       );
     }
 
-    const image = Buffer.from(
-      await file.arrayBuffer()
-    );
+    const image = Buffer.from(await file.arrayBuffer());
 
     if (!looksLikeImage(image, file.type)) {
       return json(
@@ -388,16 +415,17 @@ const server = http.createServer(async (req, res) => {
       );
     }
 
-    const form = new FormData();
+    // Seuls les paramètres choisis par le serveur sont transmis.
+    const upstreamForm = new FormData();
 
-    form.append(
+    upstreamForm.append(
       'image_file',
       new Blob([image], { type: file.type }),
       'image'
     );
 
-    form.append('size', size);
-    form.append('format', 'png');
+    upstreamForm.append('size', SIZE);
+    upstreamForm.append('format', 'png');
 
     used++;
 
@@ -406,17 +434,13 @@ const server = http.createServer(async (req, res) => {
       {
         method: 'POST',
         headers: { 'X-Api-Key': KEY },
-        body: form,
+        body: upstreamForm,
         signal: AbortSignal.timeout(55_000)
       }
     );
 
     if (!upstream.ok) {
-      console.warn(
-        'Erreur remove.bg, statut :',
-        upstream.status
-      );
-
+      console.warn('Statut remove.bg :', upstream.status);
       await upstream.body?.cancel();
 
       const messages = {
@@ -426,9 +450,7 @@ const server = http.createServer(async (req, res) => {
         429: 'remove.bg reçoit trop de demandes. Réessayez plus tard.'
       };
 
-      const status = [400, 402, 429].includes(
-        upstream.status
-      )
+      const status = [400, 402, 429].includes(upstream.status)
         ? upstream.status
         : 502;
 
@@ -441,9 +463,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (
-      !upstream.headers
-        .get('content-type')
-        ?.startsWith('image/png')
+      !upstream.headers.get('content-type')?.startsWith('image/png')
     ) {
       await upstream.body?.cancel();
 
@@ -452,6 +472,10 @@ const server = http.createServer(async (req, res) => {
         502,
         'Réponse inattendue du service de détourage.'
       );
+    }
+
+    if (!upstream.body) {
+      return json(res, 502, 'Le service a renvoyé une réponse vide.');
     }
 
     const chunks = [];
@@ -463,8 +487,8 @@ const server = http.createServer(async (req, res) => {
       if (total > MAX_RESPONSE) {
         throw Object.assign(
           new Error(
-            onVercel
-              ? 'Le PNG obtenu dépasse la taille autorisée par cette version hébergée sur Vercel. Essayez une image de dimensions plus petites.'
+            ON_VERCEL
+              ? 'Le PNG obtenu dépasse la limite de 4 Mo de cette version. Essayez une photo de dimensions plus petites.'
               : 'Le résultat est trop volumineux.'
           ),
           { status: 413 }
@@ -482,21 +506,22 @@ const server = http.createServer(async (req, res) => {
     });
 
     res.end(Buffer.concat(chunks));
-  } catch (error) {
-    if (res.destroyed || res.writableEnded) {
-      return;
-    }
+  } finally {
+    active--;
+  }
+}
 
-    console.error(
-      'Traitement interrompu :',
-      error.name,
-      error.status || ''
+const server = http.createServer((req, res) => {
+  handleRequest(req, res).catch(error => {
+    // Ne pas enregistrer la clé, le corps de requête ou les photos.
+    console.error('Erreur serveur :', {
+      name: error.name,
+      status: error.status || null
+    });
+
+    const timedOut = ['AbortError', 'TimeoutError'].includes(
+      error.name
     );
-
-    const timedOut = [
-      'AbortError',
-      'TimeoutError'
-    ].includes(error.name);
 
     json(
       res,
@@ -505,11 +530,9 @@ const server = http.createServer(async (req, res) => {
         ? error.message
         : timedOut
           ? 'Le traitement a pris trop de temps. Réessayez.'
-          : 'La connexion au service de détourage a échoué.'
+          : 'Une erreur serveur est survenue. Consultez les Logs Vercel.'
     );
-  } finally {
-    active--;
-  }
+  });
 });
 
 server.requestTimeout = 70_000;
