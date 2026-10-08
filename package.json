@@ -1,0 +1,9 @@
+{
+  "name": "speedremove",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Détourage avec remove.bg, sans base de données et sans dépendances.",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node --env-file=.env server.mjs" }
+}

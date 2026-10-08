@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SpeedRemove</title>
+<meta name="description" content="Supprimez l'arrière-plan de vos photos en quelques secondes. PNG transparent, nouveaux fonds, export PNG ou JPG. Sans inscription.">
+<meta name="theme-color" content="#1b5cff">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231b5cff'/%3E%3Cstop offset='1' stop-color='%234a86ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='36' height='36' rx='10' fill='url(%23g)'/%3E%3Cpath transform='translate(6 6) scale(1)' d='m13 2-9 12h7l-1 8 9-12h-7z' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="shortcut icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='10' fill='%231b5cff'/%3E%3Cpath transform='translate(6 6)' d='m13 2-9 12h7l-1 8 9-12h-7z' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0a1f44;--blue:#1b5cff;--blue-d:#1247cc;--blue-l:#7fb0ff;
+  --sky:#eaf1ff;--sky-2:#f5f8ff;--line:#dbe5f6;--muted:#5a6a88;--white:#fff;
+  --ok:#0f9d6b;--bad:#c62f3b;
+  --radius:18px;--shadow:0 24px 60px -24px rgba(10,31,68,.28);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--white);color:var(--navy);font-family:"Figtree",system-ui,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button,input,a{-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;color:inherit}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:6px}
+.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.wrap{max-width:1240px;margin:auto;padding:0 5%}
+h1,h2,h3{font-family:"Bricolage Grotesque","Figtree",sans-serif;letter-spacing:-.02em;margin:0}
+
+/* Header */
+header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .25s,box-shadow .25s}
+header.scrolled{border-color:var(--line);box-shadow:0 6px 24px -16px rgba(10,31,68,.25)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:20px;height:72px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:22px;letter-spacing:-.03em}
+.mark{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--blue),#4a86ff);color:#fff;box-shadow:0 8px 18px -8px var(--blue)}
+.mark .ic{width:20px;height:20px;stroke-width:2.2}
+nav{display:flex;align-items:center;gap:30px}
+nav a.link{text-decoration:none;font-size:15px;font-weight:500;color:var(--muted);transition:color .2s}
+nav a.link:hover{color:var(--blue)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:12px;padding:14px 22px;font-weight:700;font-size:15px;text-decoration:none;transition:transform .18s,box-shadow .18s,background .18s}
+.btn.primary{background:var(--blue);color:#fff;box-shadow:0 10px 24px -10px var(--blue)}
+.btn.primary:hover{background:var(--blue-d);transform:translateY(-2px);box-shadow:0 14px 28px -10px var(--blue)}
+.btn.primary:active{transform:translateY(0)}
+.btn.primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn.ghost{background:#fff;border:1px solid var(--line);color:var(--navy)}
+.btn.ghost:hover{background:var(--sky-2);border-color:#c5d5f2}
+.btn.sm{padding:10px 16px;font-size:14px;border-radius:10px}
+
+/* Hero */
+.hero-bg{position:relative;overflow:hidden;background:radial-gradient(900px 480px at 85% -10%,#dbe8ff 0,transparent 70%),radial-gradient(700px 400px at -10% 30%,#eef4ff 0,transparent 70%),#fff}
+.hero{display:grid;grid-template-columns:.92fr 1.08fr;gap:5%;align-items:center;padding:56px 0 72px}
+.pill{display:inline-flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 14px 7px 10px;font-size:14px;font-weight:600;color:var(--blue-d);box-shadow:0 6px 18px -12px rgba(10,31,68,.4)}
+.pill i{display:block;width:8px;height:8px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 0 rgba(27,92,255,.5);animation:pulse 2.2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 9px rgba(27,92,255,0)}100%{box-shadow:0 0 0 0 rgba(27,92,255,0)}}
+h1{font-size:clamp(46px,6.2vw,84px);line-height:.98;font-weight:800;margin:22px 0 20px}
+.lead{font-size:18px;color:var(--muted);max-width:470px;margin:0 0 30px}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap}
+.hint{margin-top:16px;font-size:14px;color:var(--muted)}
+.checks{display:flex;flex-wrap:wrap;gap:10px 22px;margin:34px 0 0;padding:0;list-style:none;font-size:14px;font-weight:600}
+.checks li{display:flex;align-items:center;gap:8px}
+.checks svg{width:18px;height:18px;color:var(--ok);stroke-width:2.6}
+
+/* Hero load sequence */
+.js .hero-copy>*{opacity:0;transform:translateY(18px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+.js .hero-copy>*:nth-child(2){animation-delay:.08s}
+.js .hero-copy>*:nth-child(3){animation-delay:.16s}
+.js .hero-copy>*:nth-child(4){animation-delay:.24s}
+.js .hero-copy>*:nth-child(5){animation-delay:.32s}
+.js .hero-copy>*:nth-child(6){animation-delay:.4s}
+.js .workbench{opacity:0;transform:translateY(26px) scale(.985);animation:rise .9s .2s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+
+/* Workbench */
+.workbench{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);overflow:hidden;position:relative}
+.workbench.drag::after{content:"Déposez votre photo ici";position:absolute;inset:10px;display:grid;place-items:center;border:2px dashed var(--blue);border-radius:16px;background:rgba(234,241,255,.92);color:var(--blue-d);font-weight:700;font-size:18px;z-index:20}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px}
+.toolbar-title{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+.dots{display:flex;gap:6px}.dots i{width:10px;height:10px;border-radius:50%;background:#d3def3}
+.status{font-size:13px;font-weight:600;color:var(--blue-d);background:var(--sky);padding:5px 12px;border-radius:999px;white-space:nowrap}
+.scene{position:relative;height:380px;margin:0 16px;border-radius:14px;overflow:hidden;background:#eef3fb;background-image:linear-gradient(45deg,#dfe8f7 25%,transparent 25%),linear-gradient(-45deg,#dfe8f7 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#dfe8f7 75%),linear-gradient(-45deg,transparent 75%,#dfe8f7 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0}
+.demo-before{position:absolute;inset:0;background:linear-gradient(160deg,#3b74ff,#0a1f44);clip-path:inset(0 calc(100% - var(--split,50%)) 0 0)}
+.demo-before svg{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+.sample{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.sample svg{height:90%;width:90%;filter:drop-shadow(0 16px 12px rgba(10,31,68,.25))}
+.split-line{position:absolute;left:var(--split,50%);top:0;bottom:0;width:2px;margin-left:-1px;background:#fff;pointer-events:none;box-shadow:0 0 12px rgba(10,31,68,.3)}
+.split-handle{position:absolute;left:var(--split,50%);top:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 6px 20px rgba(10,31,68,.3);color:var(--blue);pointer-events:none}
+.split-handle .ic{width:20px;height:20px;stroke-width:2.4}
+.scene-label{position:absolute;top:14px;font-size:13px;font-weight:700;background:rgba(255,255,255,.92);padding:6px 12px;border-radius:8px}
+.scene-label.left{left:14px}.scene-label.right{right:14px}
+.slider{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
+.scene:focus-within{outline:3px solid var(--blue);outline-offset:-3px}
+.stage,.photo{position:absolute;inset:0;width:100%;height:100%;display:none}
+.photo{object-fit:contain;z-index:2}
+.stage{z-index:1;transition:background .3s}
+.stage.checker{background-color:#eef3fb;background-image:linear-gradient(45deg,#dfe8f7 25%,transparent 25%),linear-gradient(-45deg,#dfe8f7 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#dfe8f7 75%),linear-gradient(-45deg,transparent 75%,#dfe8f7 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0}
+.scene.has-file .photo.original{display:block}
+.scene.has-file .demo-before,.scene.has-file .sample,.scene.has-file .split-line,.scene.has-file .split-handle,.scene.has-file .slider,.scene.has-file .scene-label{display:none}
+.scene.result:not(.show-original) .stage,.scene.result:not(.show-original) .photo.result-photo{display:block}
+.scene.result:not(.show-original) .photo.original{display:none}
+.scene.result .photo.result-photo{animation:reveal .6s ease both}
+@keyframes reveal{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.loading{position:absolute;inset:0;z-index:5;display:none;place-content:center;text-align:center;gap:14px;font-weight:700;background:rgba(255,255,255,.82);backdrop-filter:blur(3px)}
+.scene.busy .loading{display:grid}
+.scene.busy::after{content:"";position:absolute;z-index:6;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,transparent,var(--blue),transparent);animation:scan 1.3s ease-in-out infinite}
+@keyframes scan{0%{transform:translateY(0)}100%{transform:translateY(380px)}}
+.spinner{width:38px;height:38px;margin:auto;border:3px solid #cfdcf5;border-top-color:var(--blue);border-radius:50%;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 22px;font-size:14px;color:var(--muted)}
+.foot span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.linkbtn{background:none;border:0;padding:0;font-size:14px;font-weight:600;color:var(--blue);text-decoration:underline;text-underline-offset:4px;white-space:nowrap}
+
+/* Result panel */
+.panel{display:none;padding:4px 20px 6px;gap:16px;flex-direction:column}
+.panel.visible{display:flex;animation:reveal .4s ease both}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.row-label{font-size:13px;font-weight:700;color:var(--muted);min-width:64px}
+.seg{display:inline-flex;background:var(--sky);padding:4px;border-radius:11px;gap:2px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:8px;font-size:14px;font-weight:600;color:var(--muted);transition:background .2s,color .2s}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--blue-d);box-shadow:0 2px 8px rgba(10,31,68,.12)}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:34px;height:34px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0;position:relative;transition:transform .15s,box-shadow .15s;overflow:hidden}
+.sw:hover{transform:scale(1.1)}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--blue)}
+.sw.none{background-color:#fff;background-image:linear-gradient(45deg,#cfd9ec 25%,transparent 25%,transparent 75%,#cfd9ec 75%),linear-gradient(45deg,#cfd9ec 25%,transparent 25%,transparent 75%,#cfd9ec 75%);background-size:10px 10px;background-position:0 0,5px 5px}
+.sw.custom{background:conic-gradient(#ff5d5d,#ffd24d,#4dff88,#4dd2ff,#7a5dff,#ff5dc8,#ff5d5d)}
+.sw.custom input{position:absolute;inset:-6px;width:60px;height:60px;opacity:0;cursor:pointer}
+.sw.custom:focus-within{outline:3px solid var(--blue);outline-offset:2px}
+.select{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;font:inherit;font-size:14px;font-weight:600;color:var(--navy)}
+.actions{display:none;padding:10px 20px 18px;gap:10px;flex-wrap:wrap}
+.actions.visible{display:flex}
+.actions .btn{flex:1 1 150px}
+.hidden{display:none!important}
+.error{display:none;margin:0;padding:12px 20px;font-size:14px;line-height:1.6;color:var(--bad);background:#fff1f2;border-top:1px solid #ffd9dd}
+.error.visible{display:block}
+.dropzone{border-top:1px solid var(--line);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--sky-2)}
+.drop-copy{font-size:14px;color:var(--muted);line-height:1.5}
+.drop-copy strong{display:block;font-size:16px;color:var(--navy)}
+.history{display:none;padding:14px 20px;border-top:1px solid var(--line);gap:10px;align-items:center;overflow-x:auto}
+.history.visible{display:flex}
+.history .row-label{min-width:auto;white-space:nowrap}
+.thumb{width:52px;height:52px;border-radius:10px;border:2px solid transparent;padding:0;overflow:hidden;flex-shrink:0;background:#eef3fb;box-shadow:0 0 0 1px var(--line);transition:transform .15s}
+.thumb:hover{transform:translateY(-2px)}
+.thumb[aria-current="true"]{border-color:var(--blue)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,30px);background:var(--navy);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:100;box-shadow:0 14px 34px -10px rgba(10,31,68,.5)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* Sections */
+section.block{padding:84px 0}
+.head{max-width:640px;margin:0 0 46px}
+.head h2{font-size:clamp(32px,4vw,50px);line-height:1.06;font-weight:800}
+.head p{color:var(--muted);font-size:18px;margin:14px 0 0}
+.js .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+.js .reveal.in{opacity:1;transform:none}
+
+.strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--sky-2)}
+.strip ul{list-style:none;margin:0;padding:22px 0;display:flex;justify-content:space-between;gap:16px 28px;flex-wrap:wrap;font-weight:600;font-size:15px;color:var(--navy)}
+.strip li{display:flex;align-items:center;gap:10px}
+.strip .ic{color:var(--blue)}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;counter-reset:s}
+.step{position:relative;padding:28px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;transition:border-color .25s,transform .25s}
+.step:hover{border-color:var(--blue-l);transform:translateY(-4px)}
+.step::before{counter-increment:s;content:counter(s);display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--blue);color:#fff;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;margin-bottom:18px}
+.step h3{font-size:21px;margin-bottom:8px}
+.step p{margin:0;color:var(--muted);font-size:15px}
+
+.features{background:linear-gradient(180deg,var(--sky-2),#fff)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.card{padding:26px;border-radius:var(--radius);background:#fff;border:1px solid var(--line);transition:box-shadow .25s,transform .25s,border-color .25s}
+.card:hover{box-shadow:var(--shadow);transform:translateY(-4px);border-color:#c5d5f2}
+.card .ico{display:grid;place-items:center;width:46px;height:46px;border-radius:13px;background:var(--sky);color:var(--blue);margin-bottom:16px}
+.card h3{font-size:19px;margin-bottom:6px}
+.card p{margin:0;color:var(--muted);font-size:15px}
+
+.uses{display:grid;grid-template-columns:1fr 1.2fr;gap:5%;align-items:center}
+.uses-panel{background:linear-gradient(150deg,var(--blue),#0e3bb8 70%,var(--navy));color:#fff;border-radius:28px;padding:44px;position:relative;overflow:hidden}
+.uses-panel::after{content:"";position:absolute;right:-90px;bottom:-90px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.08)}
+.uses-panel h2{font-size:clamp(28px,3.4vw,42px);line-height:1.08;font-weight:800;margin-bottom:14px;position:relative}
+.uses-panel p{margin:0;color:#d6e4ff;position:relative}
+.uselist{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.use{padding:22px;border:1px solid var(--line);border-radius:var(--radius);background:#fff}
+.use .ic{color:var(--blue);margin-bottom:12px;width:26px;height:26px}
+.use h3{font-size:18px;margin-bottom:4px}
+.use p{margin:0;color:var(--muted);font-size:14.5px}
+
+.faq{max-width:820px;margin:auto}
+.faq h2{font-size:clamp(32px,4vw,48px);font-weight:800;margin-bottom:26px}
+details{border-bottom:1px solid var(--line);padding:4px 0}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 0;font-weight:700;font-size:17px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--sky);color:var(--blue);font-size:20px;line-height:1;flex-shrink:0;transition:transform .25s,background .25s}
+details[open] summary::after{transform:rotate(45deg);background:var(--blue);color:#fff}
+details p{margin:0 0 18px;color:var(--muted);font-size:15.5px;max-width:700px;animation:reveal .3s ease both}
+
+.final{margin:0 0 84px}
+.final-box{background:var(--navy);color:#fff;border-radius:30px;padding:60px 6%;display:flex;align-items:center;justify-content:space-between;gap:30px;flex-wrap:wrap;position:relative;overflow:hidden}
+.final-box::before{content:"";position:absolute;left:-80px;top:-120px;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(27,92,255,.55),transparent 70%)}
+.final-box h2{font-size:clamp(28px,3.6vw,44px);line-height:1.08;font-weight:800;max-width:560px;position:relative}
+.final-box .btn{position:relative;background:#fff;color:var(--navy)}
+.final-box .btn:hover{background:var(--sky)}
+
+footer{border-top:1px solid var(--line);padding:28px 0 36px;color:var(--muted);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+#file{display:none}
+
+/* Responsive */
+@media(max-width:1000px){
+  .hero{grid-template-columns:1fr;gap:44px;padding:36px 0 56px}
+  .lead{max-width:560px}
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .uses{grid-template-columns:1fr;gap:28px}
+}
+@media(max-width:700px){
+  nav a.link{display:none}
+  .bar{height:64px}
+  section.block{padding:60px 0}
+  .scene{height:320px;margin:0 12px}
+  .steps,.grid,.uselist{grid-template-columns:1fr}
+  .dropzone{flex-direction:column;align-items:stretch}
+  .dropzone .btn{width:100%}
+  .uses-panel{padding:32px 26px}
+  .final-box{padding:42px 28px}
+  .final-box .btn{width:100%}
+  .strip ul{justify-content:flex-start}
+  footer .wrap{flex-direction:column}
+  .toolbar{padding:14px 16px}.panel,.actions{padding-left:16px;padding-right:16px}
+}
+/* Contact */
+.ic.fill{fill:currentColor;stroke:none}
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:860px}
+.contact-card{display:flex;align-items:center;gap:18px;padding:24px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;text-decoration:none;transition:box-shadow .25s,transform .25s,border-color .25s;min-width:0}
+.contact-card:hover{box-shadow:var(--shadow);transform:translateY(-4px);border-color:#c5d5f2}
+.contact-card .ico{display:grid;place-items:center;width:54px;height:54px;border-radius:16px;flex-shrink:0;color:#fff}
+.contact-card .ico .ic{width:28px;height:28px}
+.contact-card.wa-card .ico{background:#25d366}
+.contact-card.mail-card .ico{background:var(--blue)}
+.contact-card small{display:block;font-size:13px;font-weight:600;color:var(--muted)}
+.contact-card b{display:block;font-size:17px;font-weight:700;overflow-wrap:anywhere}
+
+/* Bouton WhatsApp flottant */
+.wa{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:90;display:flex;align-items:center;flex-direction:row-reverse;gap:12px;text-decoration:none}
+.wa-btn{position:relative;z-index:2;display:grid;place-items:center;width:62px;height:62px;border-radius:50%;background:#25d366;color:#fff;box-shadow:0 12px 28px -8px rgba(37,211,102,.7);animation:wa-wiggle 4.5s ease-in-out infinite;transition:transform .2s}
+.wa:hover .wa-btn{transform:scale(1.08)}
+.wa-btn .ic{width:32px;height:32px}
+.wa-ring{position:absolute;right:0;bottom:0;width:62px;height:62px;border-radius:50%;background:#25d366;opacity:0;z-index:1;animation:wa-ring 2.4s ease-out infinite}
+.wa-ring.r2{animation-delay:1.2s}
+@keyframes wa-ring{0%{transform:scale(1);opacity:.55}100%{transform:scale(2.3);opacity:0}}
+@keyframes wa-wiggle{0%,86%,100%{transform:rotate(0)}90%{transform:rotate(-12deg)}94%{transform:rotate(10deg)}97%{transform:rotate(-6deg)}}
+.wa-label{position:relative;z-index:2;background:#fff;color:var(--navy);padding:9px 16px;border-radius:14px;font-size:13px;line-height:1.35;box-shadow:0 12px 30px -10px rgba(10,31,68,.4);border:1px solid var(--line);animation:wa-in .6s 1.4s both cubic-bezier(.2,.7,.2,1)}
+.wa-label b{font-size:14px;color:#128c4a;white-space:nowrap}
+@keyframes wa-in{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.nav-cta .short{display:none}
+body{overflow-x:hidden}
+.toast{bottom:96px}
+
+/* Tablette */
+@media(max-width:1000px){
+  .contact-grid{max-width:none}
+}
+
+/* Téléphone */
+@media(max-width:700px){
+  .wrap{padding:0 18px}
+  .bar{gap:12px}
+  .brand{font-size:20px}
+  .nav-cta .long{display:none}.nav-cta .short{display:inline}
+  .btn{min-height:48px}
+  .btn.sm{min-height:42px}
+  .hero{padding:26px 0 44px;gap:34px}
+  h1{font-size:clamp(38px,11.5vw,54px);line-height:1;margin:18px 0 14px}
+  .lead{font-size:16.5px;margin-bottom:22px}
+  .cta-row{flex-direction:column}
+  .cta-row .btn{width:100%}
+  .checks{gap:8px 16px;margin-top:26px}
+  .workbench{border-radius:18px}
+  .scene{height:clamp(250px,78vw,340px);margin:0 10px}
+  .scene-label{font-size:12px;padding:5px 10px;top:10px}
+  .scene-label.left{left:10px}.scene-label.right{right:10px}
+  .toolbar-title .dots{display:none}
+  .toolbar-title{font-size:14px}
+  .foot{padding:10px 16px}
+  .panel{gap:14px}
+  .row{flex-direction:column;align-items:stretch;gap:8px}
+  .row-label{min-width:0}
+  .seg{display:flex;width:100%}.seg button{flex:1;padding:10px 12px}
+  .swatches{gap:10px}
+  .sw{width:40px;height:40px}
+  .select{width:100%;min-height:44px}
+  .actions{padding-bottom:16px}
+  .actions .btn{flex:1 1 100%}
+  .history{padding:12px 16px}
+  .dropzone{padding:16px}
+  .strip ul{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:20px 0;font-size:14px}
+  .head{margin-bottom:30px}
+  .head p{font-size:16.5px}
+  .step,.card,.use{padding:22px}
+  summary{font-size:16px;padding:16px 0}
+  .contact-grid{grid-template-columns:1fr}
+  .contact-card{padding:18px}
+  .final{margin-bottom:60px}
+  .final-box{border-radius:22px;padding:36px 22px;text-align:center;justify-content:center}
+  .wa-label{display:none}
+  .wa-btn,.wa-ring{width:58px;height:58px}
+  .toast{width:calc(100% - 36px);text-align:center;bottom:92px}
+  footer{padding-bottom:90px}
+}
+@media(max-width:380px){
+  .strip ul{grid-template-columns:1fr}
+  .brand span.mark{width:32px;height:32px}
+}
+@media(hover:none){
+  .btn.primary:hover,.card:hover,.step:hover,.contact-card:hover,.thumb:hover,.sw:hover{transform:none}
+  .card:hover,.contact-card:hover{box-shadow:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .wa-ring{display:none}
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .js .hero-copy>*,.js .workbench,.js .reveal{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js')</script>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 9-12h-7z"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5M4 15v5h16v-5"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12m-5-5 5 5 5-5M4 20h16"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+<symbol id="i-split" viewBox="0 0 24 24"><path d="M12 3v18M3 7h6v10H3zM15 7h6v10h-6z"/></symbol>
+<symbol id="i-arrows" viewBox="0 0 24 24"><path d="m9 7-5 5 5 5M15 7l5 5-5 5"/></symbol>
+<symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.6 0 2.1-1.1 1.5-2.3-.6-1.2.2-2.2 1.6-2.2H17a4 4 0 0 0 4-4c0-5-4-9.5-9-9.5z"/><circle cx="8" cy="11" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16" cy="10" r="1"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-9 9"/></symbol>
+<symbol id="i-paste" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/></symbol>
+<symbol id="i-bag" viewBox="0 0 24 24"><path d="M6 8h12l1 12H5zM9 8a3 3 0 0 1 6 0"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/></symbol>
+<symbol id="i-brush" viewBox="0 0 24 24"><path d="m3 21 6-2 10-10-4-4L5 15z"/></symbol>
+<symbol id="i-wa" viewBox="0 0 24 24"><path d="M12.04 2a9.93 9.93 0 0 0-8.5 15.1L2 22l5-1.5A9.94 9.94 0 1 0 12.04 2zm5.8 14.1c-.25.7-1.45 1.35-2 1.4-.5.05-1.15.25-3.7-.8-3.1-1.3-5.1-4.5-5.25-4.7-.15-.2-1.25-1.65-1.25-3.15s.8-2.25 1.1-2.55c.3-.3.6-.35.8-.35h.6c.2 0 .45-.05.7.55.25.6.85 2.1.95 2.25.1.15.15.35.05.55-.1.2-.15.3-.3.5l-.45.5c-.15.15-.3.3-.15.6.15.3.7 1.15 1.5 1.85 1.05.9 1.9 1.2 2.2 1.35.3.15.45.1.6-.1.15-.2.7-.8.9-1.1.2-.3.35-.25.6-.15.25.1 1.6.75 1.9.9.3.15.45.2.55.3.1.15.1.7-.15 1.4z"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+</svg>
+
+<header id="top">
+  <div class="wrap bar">
+    <a class="brand" href="#top" aria-label="SpeedRemove, accueil"><span class="mark"><svg class="ic"><use href="#i-bolt"/></svg></span>SpeedRemove</a>
+    <nav aria-label="Navigation principale">
+      <a class="link" href="#comment">Comment ça marche</a>
+      <a class="link" href="#fonctions">Fonctions</a>
+      <a class="link" href="#usages">Usages</a>
+      <a class="link" href="#questions">Questions</a>
+      <a class="btn primary sm nav-cta" href="#outil" id="nav-cta"><span class="long">Essayer gratuitement</span><span class="short">Essayer</span></a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero-bg">
+  <div class="wrap">
+    <p class="wrap" id="preview-note" style="margin:0;padding:10px 0;font-size:14px;color:var(--muted)"><strong style="color:var(--navy)">Aperçu interactif.</strong> L'exemple est une illustration prédécoupée. Le détourage de vos photos fonctionne dans la version hébergée, après configuration de remove.bg.</p>
+    <section class="hero" aria-label="Supprimer le fond de votre photo">
+      <div class="hero-copy">
+        <span class="pill"><i></i>Détourage automatique par IA</span>
+        <h1>Gardez le sujet. Pas le fond.</h1>
+        <p class="lead">Importez une photo, récupérez votre sujet sur fond transparent, puis changez de fond, comparez et exportez en un clic.</p>
+        <div class="cta-row">
+          <button class="btn primary" id="upload-main"><svg class="ic"><use href="#i-upload"/></svg>Importer une photo</button>
+          <a class="btn ghost" href="#comment">Voir comment ça marche</a>
+        </div>
+        <div class="hint">JPG, PNG ou WebP, 10 Mo maximum. Vous pouvez aussi coller une image avec Ctrl+V.</div>
+        <ul class="checks">
+          <li><svg class="ic"><use href="#i-check"/></svg>PNG transparent</li>
+          <li><svg class="ic"><use href="#i-check"/></svg>Sans compte</li>
+          <li><svg class="ic"><use href="#i-check"/></svg>Aucune galerie stockée</li>
+        </ul>
+      </div>
+
+      <div class="workbench" id="workbench">
+        <div class="toolbar" id="outil">
+          <span class="toolbar-title"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>Votre espace de détourage</span>
+          <span class="status" id="status" role="status" aria-live="polite">Exemple interactif</span>
+        </div>
+
+        <div class="scene" id="scene" style="--split:50%">
+          <div class="demo-before"><svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><circle cx="70" cy="90" r="90" fill="#7fb0ff"/><circle cx="340" cy="300" r="120" fill="#4a86ff"/><rect x="150" y="20" width="120" height="120" rx="24" fill="#1b5cff" transform="rotate(18 210 80)"/><circle cx="330" cy="70" r="40" fill="#cfe0ff"/></svg></div>
+          <div class="sample">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Illustration d'une plante dans un pot bleu">
+              <defs><linearGradient id="pot" x1="0" x2="1"><stop stop-color="#1247cc"/><stop offset=".55" stop-color="#4a86ff"/><stop offset="1" stop-color="#0e3bb8"/></linearGradient><linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#62b36a"/><stop offset="1" stop-color="#1f5a3a"/></linearGradient></defs>
+              <path d="M198 300q8-88-8-194M195 265q-48-58-65-78M200 244q34-82 78-97M199 191q-24-55-60-72M197 210q47-45 74-65" fill="none" stroke="#2f6b3c" stroke-width="7" stroke-linecap="round"/>
+              <path d="M191 126C133 112 137 54 158 39c44 9 57 56 33 87Z" fill="url(#leaf)"/>
+              <path d="M174 163C95 165 91 106 83 86c55-6 94 34 91 77Z" fill="url(#leaf)"/>
+              <path d="M144 219C73 232 59 173 57 150c56-2 89 18 87 69Z" fill="url(#leaf)"/>
+              <path d="M206 217c4-75 56-109 94-94 5 49-36 100-94 94Z" fill="url(#leaf)"/>
+              <path d="M224 153c-1-56 36-88 80-83 5 45-42 81-80 83Z" fill="url(#leaf)"/>
+              <path d="M208 267c25-66 74-81 117-64-7 40-59 72-117 64Z" fill="url(#leaf)"/>
+              <path d="M183 279c-60-9-87-35-81-76 44-6 81 27 81 76Z" fill="url(#leaf)"/>
+              <path d="m164 57 25 65m-89-18 64 53m-88 15 63 41m145-73-70 70m70-126-58 63m77 66-85 45m-97-38 56 48" fill="none" stroke="#c7ecb82f" stroke-width="2"/>
+              <ellipse cx="202" cy="281" rx="70" ry="16" fill="#0e3bb8"/><path d="m134 280 15 79q51 25 103 0l16-79Z" fill="url(#pot)"/><ellipse cx="201" cy="280" rx="68" ry="13" fill="#0a2a82"/><ellipse cx="201" cy="278" rx="60" ry="9" fill="#493724"/><path d="m141 299 11 55" stroke="#ffffff77" stroke-width="3"/><path d="M196 281v-25" stroke="#2f6b3c" stroke-width="7"/><path d="M130 279q69 24 140 0v12q-70 26-140 0Z" fill="#6ea0ff"/>
+            </svg>
+          </div>
+          <div class="stage checker" id="stage"></div>
+          <img id="original" class="photo original" alt="Votre photo originale">
+          <img id="result" class="photo result-photo" alt="Votre photo détourée">
+          <span class="scene-label left">Avant</span><span class="scene-label right">Après</span>
+          <div class="split-line"></div><div class="split-handle"><svg class="ic"><use href="#i-arrows"/></svg></div>
+          <input id="compare" class="slider" type="range" min="0" max="100" value="50" aria-label="Comparer le fond original et le fond transparent">
+          <div class="loading"><span class="spinner"></span><span>Détourage en cours…</span></div>
+        </div>
+
+        <div class="foot"><span id="caption">Faites glisser pour comparer</span><button class="linkbtn" id="reset" type="button">Revoir l'exemple</button></div>
+
+        <div class="panel" id="panel">
+          <div class="row">
+            <span class="row-label">Affichage</span>
+            <div class="seg" role="group" aria-label="Affichage">
+              <button type="button" id="v-result" aria-pressed="true">Détourée</button>
+              <button type="button" id="v-original" aria-pressed="false">Originale</button>
+            </div>
+          </div>
+          <div class="row">
+            <span class="row-label">Fond</span>
+            <div class="swatches" id="swatches" role="group" aria-label="Choisir un fond"></div>
+          </div>
+          <div class="row">
+            <span class="row-label">Format</span>
+            <select class="select" id="format" aria-label="Format d'export">
+              <option value="png">PNG (fond conservé)</option>
+              <option value="jpg">JPG (léger, fond plein)</option>
+            </select>
+          </div>
+        </div>
+
+        <p class="error" id="error" role="alert"></p>
+        <div class="actions" id="actions">
+          <button class="btn primary" id="download" type="button"><svg class="ic"><use href="#i-download"/></svg>Télécharger</button>
+          <button class="btn ghost" id="copy" type="button"><svg class="ic"><use href="#i-copy"/></svg>Copier l'image</button>
+          <button class="btn primary hidden" id="retry" type="button">Réessayer</button>
+        </div>
+
+        <div class="history" id="history" aria-label="Photos de cette session"><span class="row-label">Session</span></div>
+
+        <div class="dropzone">
+          <div class="drop-copy"><strong>À votre sujet de briller.</strong>Déposez une image ici ou collez-la avec Ctrl+V</div>
+          <button class="btn ghost sm" id="upload-small" type="button">Choisir un fichier</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="strip">
+  <div class="wrap"><ul>
+    <li class="reveal"><svg class="ic"><use href="#i-bolt"/></svg>Résultat en quelques secondes</li>
+    <li class="reveal"><svg class="ic"><use href="#i-image"/></svg>PNG transparent haute qualité</li>
+    <li class="reveal"><svg class="ic"><use href="#i-palette"/></svg>Nouveaux fonds en un clic</li>
+    <li class="reveal"><svg class="ic"><use href="#i-phone"/></svg>Fonctionne sur mobile</li>
+    <li class="reveal"><svg class="ic"><use href="#i-lock"/></svg>Aucune photo conservée</li>
+  </ul></div>
+</div>
+
+<main>
+<section class="block" id="comment">
+  <div class="wrap">
+    <div class="head reveal"><h2>Trois étapes, aucune compétence en retouche</h2><p>Le traitement démarre dès que vous choisissez votre photo.</p></div>
+    <div class="steps">
+      <div class="step reveal"><h3>Importez</h3><p>Glissez une photo, choisissez un fichier ou collez une image depuis votre presse-papiers.</p></div>
+      <div class="step reveal"><h3>Comparez</h3><p>Le fond disparaît automatiquement. Basculez entre l'original et le résultat pour vérifier les contours.</p></div>
+      <div class="step reveal"><h3>Exportez</h3><p>Gardez la transparence ou choisissez un nouveau fond, puis téléchargez en PNG ou JPG, ou copiez l'image.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block features" id="fonctions">
+  <div class="wrap">
+    <div class="head reveal"><h2>Tout ce qu'il faut pour finir votre image</h2><p>Le détourage n'est que le début. Retrouvez les outils utiles juste après, sans changer d'application.</p></div>
+    <div class="grid">
+      <article class="card reveal"><span class="ico"><svg class="ic"><use href="#i-image"/></svg></span><h3>PNG transparent</h3><p>Votre sujet seul, prêt à être placé dans une affiche, une présentation ou un site.</p></article>
+      <article class="card reveal"><span class="ico"><svg class="ic"><use href="#i-palette"/></svg></span><h3>Nouveaux fonds</h3><p>Blanc, bleu, dégradé ou n'importe quelle couleur. Le fond choisi est inclus dans l'export.</p></article>
+      <article class="card reveal"><span class="ico"><svg class="ic"><use href="#i-split"/></svg></span><h3>Comparaison avant et après</h3><p>Affichez l'original et la version détourée pour contrôler chaque contour avant de télécharger.</p></article>
+      <article class="card reveal"><span class="ico"><svg class="ic"><use href="#i-download"/></svg></span><h3>Export PNG ou JPG</h3><p>PNG pour garder la transparence, JPG pour un fichier léger avec un fond plein.</p></article>
+      <article class="card reveal"><span class="ico"><svg class="ic"><use href="#i-paste"/></svg></span><h3>Coller et copier</h3><p>Collez une capture avec Ctrl+V, puis copiez le résultat pour l'envoyer directement dans une conversation.</p></article>
+      <article class="card reveal"><span class="ico"><svg class="ic"><use href="#i-clock"/></svg></span><h3>Historique de session</h3><p>Retrouvez vos dernières photos de la session et revenez à l'une d'elles en un clic.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="usages">
+  <div class="wrap uses">
+    <div class="uses-panel reveal">
+      <h2>Une photo propre change tout</h2>
+      <p>Boutiques en ligne, profils professionnels, créations graphiques : un sujet bien détaché gagne en clarté et en confiance.</p>
+    </div>
+    <div class="uselist">
+      <div class="use reveal"><svg class="ic"><use href="#i-bag"/></svg><h3>Boutiques en ligne</h3><p>Des fiches produit sur fond blanc, cohérentes d'un article à l'autre.</p></div>
+      <div class="use reveal"><svg class="ic"><use href="#i-user"/></svg><h3>Portraits</h3><p>Photos de profil et CV sur un fond uni, sans studio.</p></div>
+      <div class="use reveal"><svg class="ic"><use href="#i-heart"/></svg><h3>Réseaux sociaux</h3><p>Publications, bannières et stickers avec un sujet qui se détache.</p></div>
+      <div class="use reveal"><svg class="ic"><use href="#i-brush"/></svg><h3>Création graphique</h3><p>Affiches, flyers et présentations : placez le sujet où vous voulez.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="questions" style="padding-top:20px">
+  <div class="wrap">
+    <div class="faq">
+      <h2 class="reveal">Questions fréquentes</h2>
+      <details class="reveal"><summary>Comment fonctionne le détourage ?</summary><p>Importez une image JPG, PNG ou WebP. Dans le site déployé, elle est transmise à remove.bg pour supprimer son arrière-plan. Le résultat apparaît automatiquement et vous pouvez télécharger le PNG transparent. Le temps de traitement varie selon l'image et le réseau.</p></details>
+      <details class="reveal"><summary>Où vont mes photos ?</summary><p>Votre photo passe temporairement en mémoire sur le serveur puis est envoyée à remove.bg. SpeedRemove ne l'enregistre pas sur disque et ne crée aucune galerie. remove.bg applique sa propre politique de confidentialité et de conservation.</p></details>
+      <details class="reveal"><summary>Quelles sont les limites ?</summary><p>Une image à la fois, 10 Mo maximum et 25 mégapixels maximum. La taille du résultat dépend de l'option configurée et des crédits du compte remove.bg. Ce service n'est pas nécessairement gratuit : chaque traitement peut consommer des crédits.</p></details>
+      <details class="reveal"><summary>Puis-je changer le fond après le détourage ?</summary><p>Oui. Une fois le résultat affiché, choisissez un fond uni, un dégradé ou une couleur libre. Il sera appliqué à l'image téléchargée ou copiée.</p></details>
+      <details class="reveal"><summary>Quelle différence entre PNG et JPG ?</summary><p>Le PNG conserve la transparence. Le JPG est plus léger mais ne gère pas la transparence : si vous n'avez pas choisi de fond, un fond blanc est ajouté.</p></details>
+      <details class="reveal"><summary>Est-ce que ça marche sur téléphone ?</summary><p>Oui. La page s'adapte aux écrans mobiles et vous pouvez importer une photo directement depuis votre galerie.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="contact" style="padding-top:10px">
+  <div class="wrap">
+    <div class="head reveal"><h2>Une question ? Écrivez-nous</h2><p>Nous répondons directement sur WhatsApp ou par email.</p></div>
+    <div class="contact-grid">
+      <a class="contact-card wa-card reveal" href="https://wa.me/243971404824?text=Bonjour%2C%20j%27ai%20une%20question%20sur%20SpeedRemove." target="_blank" rel="noopener"><span class="ico"><svg class="ic fill"><use href="#i-wa"/></svg></span><span><small>WhatsApp</small><b>+243 971 404 824</b></span></a>
+      <a class="contact-card mail-card reveal" href="mailto:rnzogero@gmail.com?subject=SpeedRemove"><span class="ico"><svg class="ic"><use href="#i-mail"/></svg></span><span><small>Email</small><b>rnzogero@gmail.com</b></span></a>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap"><div class="final-box reveal">
+    <h2>Prêt à retirer le fond de votre prochaine photo ?</h2>
+    <a class="btn" href="#outil" id="final-cta"><svg class="ic"><use href="#i-upload"/></svg>Importer une photo</a>
+  </div></div>
+</section>
+</main>
+
+<footer><div class="wrap"><span>SpeedRemove. Le sujet, rien que le sujet.</span><span><a href="https://wa.me/243971404824" target="_blank" rel="noopener">WhatsApp +243 971 404 824</a> · <a href="mailto:rnzogero@gmail.com">rnzogero@gmail.com</a></span><span>Sans inscription · Propulsé par remove.bg</span></div></footer>
+
+<a class="wa" href="https://wa.me/243971404824?text=Bonjour%2C%20j%27ai%20une%20question%20sur%20SpeedRemove." target="_blank" rel="noopener" aria-label="Discuter sur WhatsApp au +243 971 404 824">
+  <span class="wa-ring"></span><span class="wa-ring r2"></span>
+  <span class="wa-btn"><svg class="ic fill"><use href="#i-wa"/></svg></span>
+  <span class="wa-label">Une question ?<br><b>+243 971 404 824</b></span>
+</a>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input id="file" type="file" accept="image/jpeg,image/png,image/webp">
+
+<script>
+const DEMO = false;
+const $ = id => document.getElementById(id);
+const MAX_BYTES = 10*1024*1024, MAX_PIXELS = 25000000, MAX_HISTORY = 8;
+const BGS = [
+  {id:'none',label:'Transparent'},
+  {id:'white',label:'Blanc',color:'#ffffff'},
+  {id:'sky',label:'Bleu clair',color:'#dbe8ff'},
+  {id:'blue',label:'Bleu',color:'#1b5cff'},
+  {id:'navy',label:'Bleu nuit',color:'#0a1f44'},
+  {id:'grad',label:'Dégradé bleu',gradient:['#1b5cff','#7fb0ff']}
+];
+let bg = BGS[0], customColor = '#ffffff';
+let items = [], current = null, pending = null, generation = 0, userTouched = false, toastTimer;
+
+/* ---------- Utilitaires ---------- */
+const setError = m => { $('error').textContent = m; $('error').classList.toggle('visible', Boolean(m)); };
+const setStatus = t => $('status').textContent = t;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2400); }
+function setSplit(v){ $('scene').style.setProperty('--split', v+'%'); $('compare').value = v; }
+function revokeItem(it){ if(it.sourceUrl) URL.revokeObjectURL(it.sourceUrl); if(it.resultUrl) URL.revokeObjectURL(it.resultUrl); }
+function cancel(){ generation++; if(pending) pending.abort(); pending=null; $('scene').classList.remove('busy'); }
+
+/* ---------- Fonds ---------- */
+function buildSwatches(){
+  const box = $('swatches');
+  BGS.forEach(b => {
+    const s = document.createElement('button');
+    s.type='button'; s.className='sw'+(b.id==='none'?' none':''); s.title=b.label; s.setAttribute('aria-label',b.label);
+    s.setAttribute('aria-pressed', b.id===bg.id);
+    if(b.color) s.style.background=b.color;
+    if(b.gradient) s.style.background=`linear-gradient(135deg,${b.gradient[0]},${b.gradient[1]})`;
+    s.onclick = () => chooseBg(b);
+    s.dataset.id = b.id;
+    box.appendChild(s);
+  });
+  const c = document.createElement('label');
+  c.className='sw custom'; c.title='Couleur libre'; c.dataset.id='custom';
+  c.innerHTML='<input type="color" value="#ffffff" aria-label="Couleur libre">';
+  c.querySelector('input').addEventListener('input', e => { customColor=e.target.value; chooseBg({id:'custom',label:'Couleur libre',color:customColor}); });
+  box.appendChild(c);
+}
+function chooseBg(b){
+  bg = b;
+  document.querySelectorAll('#swatches .sw').forEach(el => el.setAttribute('aria-pressed', el.dataset.id===b.id));
+  applyBg();
+}
+function bgCss(){ if(bg.gradient) return `linear-gradient(135deg,${bg.gradient[0]},${bg.gradient[1]})`; return bg.color||''; }
+function applyBg(){
+  const st=$('stage');
+  if(bg.id==='none'){ st.classList.add('checker'); st.style.background=''; }
+  else { st.classList.remove('checker'); st.style.background=bgCss(); }
+}
+
+/* ---------- Export ---------- */
+function loadImage(url){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; }); }
+async function renderExport(format){
+  const img = await loadImage(current.resultUrl);
+  const c = document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
+  const ctx = c.getContext('2d');
+  if(bg.gradient){ const g=ctx.createLinearGradient(0,0,c.width,c.height); g.addColorStop(0,bg.gradient[0]); g.addColorStop(1,bg.gradient[1]); ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height); }
+  else if(bg.color){ ctx.fillStyle=bg.color; ctx.fillRect(0,0,c.width,c.height); }
+  else if(format==='jpg'){ ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,c.width,c.height); }
+  ctx.drawImage(img,0,0);
+  return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('export')), format==='jpg'?'image/jpeg':'image/png', .95));
+}
+async function downloadResult(){
+  if(!current||!current.resultUrl) return;
+  const format=$('format').value;
+  try{
+    const blob = await renderExport(format);
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url;
+    a.download=(current.file.name.replace(/\.[^.]+$/,'')||'photo')+'-speedremove.'+format;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    toast('Image téléchargée');
+  }catch{ setError("L'export a échoué. Essayez un autre format ou réessayez."); }
+}
+async function copyResult(){
+  if(!current||!current.resultUrl) return;
+  if(!navigator.clipboard||!window.ClipboardItem) return toast('Copie non disponible sur ce navigateur');
+  try{ const blob=await renderExport('png'); await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); toast('Image copiée'); }
+  catch{ toast('La copie a échoué. Utilisez Télécharger.'); }
+}
+
+/* ---------- Historique ---------- */
+function renderHistory(){
+  const h=$('history');
+  h.querySelectorAll('.thumb').forEach(n=>n.remove());
+  const done = items.filter(i=>i.resultUrl);
+  h.classList.toggle('visible', done.length>0);
+  done.forEach(it=>{
+    const b=document.createElement('button'); b.type='button'; b.className='thumb'; b.title=it.file.name;
+    b.setAttribute('aria-label','Rouvrir '+it.file.name);
+    if(it===current) b.setAttribute('aria-current','true');
+    const im=document.createElement('img'); im.src=it.resultUrl; im.alt=''; b.appendChild(im);
+    b.onclick=()=>loadItem(it);
+    h.appendChild(b);
+  });
+}
+function addToHistory(it){
+  items.unshift(it);
+  while(items.length>MAX_HISTORY){ const old=items.pop(); if(old!==current) revokeItem(old); }
+}
+
+/* ---------- Affichage ---------- */
+function setView(v){
+  const orig = v==='original';
+  $('scene').classList.toggle('show-original', orig);
+  $('v-original').setAttribute('aria-pressed', orig);
+  $('v-result').setAttribute('aria-pressed', !orig);
+}
+function showItem(it){
+  current = it;
+  $('original').src = it.sourceUrl;
+  $('scene').classList.add('has-file');
+  $('caption').textContent = it.file.name;
+  if(it.resultUrl){
+    $('result').src = it.resultUrl;
+    $('scene').classList.add('result'); setView('result'); applyBg();
+    $('panel').classList.add('visible'); $('actions').classList.add('visible');
+    $('download').disabled=false; $('copy').disabled=false; $('retry').classList.add('hidden');
+    setStatus('Votre image est prête ✓');
+  }
+}
+function loadItem(it){
+  cancel(); setError(''); showItem(it); renderHistory();
+}
+function reset(){
+  cancel(); current=null; $('file').value='';
+  $('scene').classList.remove('has-file','result','show-original');
+  $('original').removeAttribute('src'); $('result').removeAttribute('src');
+  setStatus('Exemple interactif'); $('caption').textContent='Faites glisser pour comparer';
+  $('panel').classList.remove('visible'); $('actions').classList.remove('visible'); $('retry').classList.add('hidden');
+  setError(''); renderHistory(); setSplit(50);
+}
+
+/* ---------- Import ---------- */
+async function select(file){
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)) return setError('Format non accepté. Choisissez une image JPG, PNG ou WebP.');
+  if(!file.size) return setError('Ce fichier est vide.');
+  if(file.size>MAX_BYTES) return setError('Cette image dépasse 10 Mo. Réduisez sa taille puis réessayez.');
+  cancel(); setError('');
+  const it={file, sourceUrl:URL.createObjectURL(file), resultUrl:null, resultBlob:null};
+  const my=generation;
+  try{
+    const probe=new Image(); probe.src=it.sourceUrl; await probe.decode();
+    if(my!==generation){ URL.revokeObjectURL(it.sourceUrl); return; }
+    if(probe.naturalWidth*probe.naturalHeight>MAX_PIXELS){ URL.revokeObjectURL(it.sourceUrl); return setError('Cette image dépasse 25 mégapixels. Réduisez ses dimensions.'); }
+  }catch{
+    URL.revokeObjectURL(it.sourceUrl);
+    if(my!==generation) return;
+    return setError('Cette image ne peut pas être lue. Essayez un autre fichier.');
+  }
+  current=it;
+  $('scene').classList.remove('result','show-original');
+  $('panel').classList.remove('visible'); $('actions').classList.remove('visible'); $('retry').classList.add('hidden');
+  $('original').src=it.sourceUrl; $('scene').classList.add('has-file');
+  $('caption').textContent=file.name; setStatus('Photo importée');
+  document.getElementById('outil').scrollIntoView({behavior:'smooth',block:'start'});
+  if(DEMO){ setError("Photo importée localement. Le vrai détourage est disponible dans le site à héberger, avec la clé remove.bg configurée côté serveur. Cet aperçu ne simule pas un résultat sur votre photo."); return; }
+  await processImage();
+}
+async function processImage(){
+  const it=current; if(!it) return;
+  const my=generation; pending=new AbortController(); const controller=pending;
+  const timer=setTimeout(()=>controller.abort(),65000);
+  $('scene').classList.add('busy'); setStatus('Traitement…'); setError(''); $('actions').classList.remove('visible');
+  try{
+    const body=new FormData(); body.append('image_file',it.file);
+    const response=await fetch('/api/remove-background',{method:'POST',body,signal:controller.signal});
+    if(!response.ok){ let d; try{ d=await response.json(); }catch{} throw new Error(d?.error||'Le traitement a échoué. Réessayez plus tard.'); }
+    const blob=await response.blob();
+    if(!blob.type.startsWith('image/')) throw new Error('Le service a renvoyé un fichier inattendu.');
+    if(my!==generation) return;
+    if(it.resultUrl) URL.revokeObjectURL(it.resultUrl);
+    it.resultBlob=blob; it.resultUrl=URL.createObjectURL(blob);
+    if(!items.includes(it)) addToHistory(it);
+    showItem(it); renderHistory();
+  }catch(e){
+    if(my!==generation) return;
+    setError(e.name==='AbortError'?'Le traitement a pris trop de temps. Réessayez.':e.message);
+    setStatus('Traitement interrompu');
+    $('download').disabled=true; $('copy').disabled=true;
+    $('retry').classList.remove('hidden'); $('actions').classList.add('visible');
+  }finally{
+    clearTimeout(timer);
+    if(my===generation){ $('scene').classList.remove('busy'); pending=null; }
+  }
+}
+
+/* ---------- Événements ---------- */
+buildSwatches();
+$('compare').addEventListener('input',e=>{ userTouched=true; setSplit(e.target.value); });
+$('compare').addEventListener('pointerdown',()=>userTouched=true);
+['upload-main','upload-small'].forEach(id=>$(id).onclick=()=>$('file').click());
+$('file').onchange=e=>{ if(e.target.files[0]) select(e.target.files[0]); };
+$('reset').onclick=reset;
+$('retry').onclick=processImage;
+$('download').onclick=downloadResult;
+$('copy').onclick=copyResult;
+$('v-result').onclick=()=>setView('result');
+$('v-original').onclick=()=>setView('original');
+
+const wb=$('workbench'); let dragDepth=0;
+wb.addEventListener('dragenter',e=>{ e.preventDefault(); dragDepth++; wb.classList.add('drag'); });
+wb.addEventListener('dragover',e=>e.preventDefault());
+wb.addEventListener('dragleave',()=>{ dragDepth=Math.max(0,dragDepth-1); if(!dragDepth) wb.classList.remove('drag'); });
+wb.addEventListener('drop',e=>{
+  e.preventDefault(); dragDepth=0; wb.classList.remove('drag');
+  if(e.dataTransfer.files.length!==1) return setError('Choisissez une seule image à la fois.');
+  select(e.dataTransfer.files[0]);
+});
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>e.preventDefault());
+document.addEventListener('paste',e=>{
+  const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));
+  if(f) select(f);
+});
+
+/* En-tête, apparitions au défilement, balayage de l'exemple */
+const header=document.querySelector('header');
+const onScroll=()=>header.classList.toggle('scrolled',scrollY>8);
+addEventListener('scroll',onScroll,{passive:true}); onScroll();
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const els=document.querySelectorAll('.reveal');
+if('IntersectionObserver' in window && !reduce){
+  const io=new IntersectionObserver(es=>es.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } }),{threshold:.15});
+  els.forEach((el,i)=>{ el.style.transitionDelay=(i%3)*70+'ms'; io.observe(el); });
+}else els.forEach(el=>el.classList.add('in'));
+if(!reduce){
+  setSplit(96);
+  setTimeout(()=>{
+    const from=96,to=50,dur=1400; let t0;
+    const step=ts=>{
+      if(userTouched||current) return;
+      t0??=ts; const p=Math.min((ts-t0)/dur,1), e=1-Math.pow(1-p,3);
+      setSplit(Math.round(from+(to-from)*e));
+      if(p<1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  },900);
+}
+if(!DEMO) $('preview-note').remove();
+addEventListener('pagehide',()=>{ cancel(); items.forEach(revokeItem); if(current&&!items.includes(current)) revokeItem(current); });
+</script>
+</body>
+</html>
